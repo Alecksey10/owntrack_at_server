@@ -65,8 +65,8 @@ EOF
 
 # Главная функция
 main() {
-    #install_dependencies
-    #configure_ufw
+    install_dependencies
+    configure_ufw
     setup_containers
     configure_nginx
 
