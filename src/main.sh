@@ -17,6 +17,8 @@ configure_ufw() {
     sudo ufw allow 443/tcp
     #для ssh
     sudo ufw allow 22/tcp
+    sudo ufw allow 1883/tcp
+    sudo ufw allow 1883
     sudo ufw enable
 }
 
