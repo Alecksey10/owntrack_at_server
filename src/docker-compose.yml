@@ -1,0 +1,31 @@
+name: owntrack
+services:
+  mosquitto:
+    image: eclipse-mosquitto
+    restart: always
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    volumes:
+      - ./mosquitto/config:/mosquitto/config
+      - ./mosquitto/data:/mosquitto/data
+    networks:
+      - owntracks_net
+
+  owntracks-recorder:
+    image: owntracks/recorder
+    restart: always
+    environment:
+      - OTR_HOST=mosquitto
+      - OTR_PORT=1883
+      - OTR_USER=${OWNTRACKRECORDER_USER}
+      - OTR_PASS=${OWNTRACKRECORDER_PASSWORD}
+    networks:
+      - owntracks_net
+    depends_on:
+      - mosquitto
+
+
+networks:
+  owntracks_net:
+    driver: bridge
