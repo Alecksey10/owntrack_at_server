@@ -42,18 +42,39 @@ configure_nginx() {
 
     sudo htpasswd -b -c /etc/nginx/.htpasswd "${AUTH_USER}" "${AUTH_PASS}"
 
-    container_ip=$(sudo docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $(sudo docker compose -p owntrack ps -a --format "{{.Names}}" | grep owntracks))
+    container_ip_recorder=$(sudo docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $(sudo docker compose -p owntrack ps -a --format "{{.Names}}" | grep recorder))
+    container_ip_frontend=$(sudo docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $(sudo docker compose -p owntrack ps -a --format "{{.Names}}" | grep frontend))
     
     # Создаём конфиг Nginx
     cat <<EOF | sudo tee /etc/nginx/sites-available/owntracks > /dev/null
 server {
     listen 80 default_server;
     server_name _;
+    
+    location /owntrack/ws/  {
+        proxy_pass http://$container_ip_recorder:8083/ws/;
+	proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection "upgrade";
 
-    location /owntrack/ {
+        # Дополнительные заголовки
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+    }
+
+    location /owntrack/  {
         auth_basic "Restricted Area";
         auth_basic_user_file /etc/nginx/.htpasswd;
-        proxy_pass http://$container_ip:8083/;
+        proxy_pass http://$container_ip_recorder:8083/;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+    }
+
+    location /frontend/ {
+        auth_basic "Restricted Area";
+        auth_basic_user_file /etc/nginx/.htpasswd;
+        proxy_pass http://$container_ip_frontend:8081/;
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
     }

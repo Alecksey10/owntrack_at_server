@@ -15,16 +15,35 @@ services:
   owntracks-recorder:
     image: owntracks/recorder
     restart: always
+    expose:
+      - "8083"
     environment:
       - OTR_HOST=mosquitto
       - OTR_PORT=1883
       - OTR_USER=${OWNTRACKRECORDER_USER}
       - OTR_PASS=${OWNTRACKRECORDER_PASSWORD}
+      - OTR_CORS=*
     networks:
       - owntracks_net
     depends_on:
       - mosquitto
 
+
+  owntracks-frontend:
+    image: owntracks/frontend
+    expose:
+      - "8081"
+    volumes:
+      - ./frontend/config/config.js:/usr/share/nginx/html/config/config.js
+    environment:
+      - SERVER_HOST=owntracks-recorder
+      - SERVER_PORT=8083
+      - LISTEN_PORT=8081
+    restart: always
+    depends_on:
+      - owntracks-recorder
+    networks:
+      - owntracks_net
 
 networks:
   owntracks_net:
